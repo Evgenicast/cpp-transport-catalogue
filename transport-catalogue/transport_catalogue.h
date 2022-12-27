@@ -12,6 +12,7 @@
 
 namespace transport_catalogue
 {
+
     using StopToStop = std::pair<std::string, std::string>;
 
     struct StopInputData
@@ -27,16 +28,20 @@ namespace transport_catalogue
     {
         BusInputData() = default;
         explicit BusInputData(const std::string_view & RouteName_, const bool & CIRCLE_ROUTE_, const std::deque<const StopInputData*> & BusRoutes_,
-        std::unordered_set<const StopInputData*> & UniqueStops_ )
+        std::unordered_set<const StopInputData*> & UniqueStops_, const int & Length_, const double & Curvature_ )
         : RouteName(RouteName_),
           CIRCLE_ROUTE(CIRCLE_ROUTE_),
           BusRoutes(BusRoutes_),
-          UniqueStops(std::move(UniqueStops_)){};
+          UniqueStops(std::move(UniqueStops_)),
+          Length(Length_), Curvature(Curvature_)
+        {};
 
         std::string RouteName;
         bool CIRCLE_ROUTE = false;
         std::deque<const StopInputData*> BusRoutes;
         std::unordered_set<const StopInputData*> UniqueStops;
+        int Length;
+        double Curvature;
     };
 
     class TransportCatalogue
@@ -89,7 +94,7 @@ namespace transport_catalogue
             double Curvature;
         };
 
-        class StopData
+        class StopOutputData
         {
         private:
 
@@ -97,24 +102,24 @@ namespace transport_catalogue
 
         public:
 
-            StopData() = delete;
-            explicit StopData( std::string_view & StopName_, std::set<std::string_view> & BusesForStop_ )
+            StopOutputData() = delete;
+            explicit StopOutputData( const std::string_view & StopName_, const std::set<std::string_view> & BusesForStop_, const bool IsBus_ )
+                : StopName(StopName_), BusesForStop(/*std::move(BusesForStop_)*/BusesForStop_), IsBus(IsBus_) // Внимательно! Сам же запретил перемещиение!
             {
                 ++cnt;
-                StopName = StopName_;
-                BusesForStop = BusesForStop_;
             }
 
-            StopData(const StopData &) = delete;
-            StopData(StopData &&) noexcept = delete;
+            StopOutputData(const StopOutputData &) = delete;
+            StopOutputData(StopOutputData &&) noexcept = delete;
 
-            StopData & operator=(const StopData &) = delete;
-            StopData & operator=(StopData &&) noexcept = delete;
+            StopOutputData & operator=(const StopOutputData &) = delete;
+            StopOutputData & operator=(StopOutputData &&) noexcept = delete;
 
-            ~StopData() {--cnt;/*std::cout << __PRETTY_FUNCTION__ << std::endl;*/};
+            ~StopOutputData() {--cnt;};
 
             std::string StopName;
             std::set<std::string_view> BusesForStop;
+            bool IsBus;
             static int GetCount() {return cnt;}
         };
 
@@ -133,8 +138,11 @@ namespace transport_catalogue
 
         std::deque<BusInputData> Buses;
         std::deque<StopInputData> Stops;
+        std::deque <StopOutputData> BusesForStop;
         std::unordered_map<std::string_view, BusInputData*> BusesMap;
         std::unordered_map<std::string_view, StopInputData*> StopsMap;
+        std::unordered_map<std::string_view, StopOutputData*> BusesForStopMap;
+
         std::unordered_map<std::pair<const StopInputData*, const StopInputData *>, size_t, StopsDistPtrPairHasher> DistanceBetweenStops;
 
         public:
@@ -142,19 +150,23 @@ namespace transport_catalogue
         TransportCatalogue();
 
         void AddStop(const std::string_view & StopName , double & LAT, const double & LNG);
-        void AddBus(const std::string_view& bus_num, const bool& cicle_type, const std::deque<std::string> & Stops);
+        void AddBus(const std::string_view & BusName, const bool & IsCircleRoute, const std::deque<std::string> & Stops);
+
+        void CalcAndAddLengthToBusData(const std::string_view & BusName);
+        void FindAndAddBusesForStop(const std::string_view & Stop);
 
         TransportCatalogue::BusOutputData * FindBusRoute(const std::string_view & BusName);
-        TransportCatalogue::StopData * FindStopData(const std::string_view &Stop);
+        TransportCatalogue::StopOutputData * FindStopData(const std::string_view & Stop);
 
         const StopInputData * CheckIsStop(const std::string_view & Stop) const;
         const BusInputData * CheckIsBus(const std::string_view & Bus) const;
+        const StopOutputData * CheckIsStopForBus(const std::string_view & Stop) const;
 
         void SetDistanceBetweenStops(const std::string_view & StopFrom_, const std::string_view & StopTo_, const int & Distance);
         int GetDistanceBetweenStops(const StopInputData * StopFrom, const StopInputData *StopTo ) const;
 
         static int GetCountOfBusses() {return BusOutputData::GetCount();}
-        static int GetCountOfStopData() {return StopData::GetCount();}
+        static int GetCountOfStopData() {return StopOutputData::GetCount();}
 
     };
 }//transport_catalogue

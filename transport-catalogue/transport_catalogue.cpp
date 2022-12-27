@@ -6,7 +6,7 @@ namespace transport_catalogue
 {
 
     /*static*/ int TransportCatalogue::BusOutputData::Count = 0;
-    /*static*/ int TransportCatalogue::StopData::cnt = 0;
+    /*static*/ int TransportCatalogue::StopOutputData::cnt = 0;
 
     TransportCatalogue::TransportCatalogue()
     {
@@ -19,20 +19,67 @@ namespace transport_catalogue
         StopsMap[Stops.front().Name] = &Stops.front();
     }
 
-    void TransportCatalogue::AddBus(const std::string_view & bus_num, const bool & cicle_type, const std::deque<std::string> & Stops)
+    void TransportCatalogue::AddBus(const std::string_view & BusName, const bool & IsCircleRoute, const std::deque<std::string> & Stops)
     {
         std::unordered_set<const StopInputData*> pUniqueStops;
         std::deque<const StopInputData*> pBusRoutes;
 
         for (auto & Stop : Stops )
         {
-            auto pIsStop = CheckIsStop(Stop);
-            pBusRoutes.emplace_back(pIsStop);
-            pUniqueStops.emplace(pIsStop);
+            auto pStop = CheckIsStop(Stop);
+            pBusRoutes.emplace_back(pStop);
+            pUniqueStops.emplace(pStop);
         }
 
-        Buses.emplace_front(bus_num, cicle_type, pBusRoutes, pUniqueStops);
+        Buses.emplace_front(BusName, IsCircleRoute, pBusRoutes, pUniqueStops, 0, 0.0);
         BusesMap[Buses.front().RouteName] = &Buses.front();
+    }
+
+    void TransportCatalogue::CalcAndAddLengthToBusData(const std::string_view & BusName)
+    {
+        double Curvature = 0.0;
+        const BusInputData * pBus = CheckIsBus(BusName);
+        if (pBus == nullptr)
+        {
+            return;
+        }
+
+        for (auto it = pBus->BusRoutes.begin(); it < pBus->BusRoutes.end()-1; ++it)
+        {
+            auto FirstStop = *it;
+            auto SecondStopIterator = it;
+            auto SecondStop = *(++SecondStopIterator);
+
+            Curvature += ComputeDistance(SecondStop->Coords, FirstStop->Coords);
+            BusesMap[BusName]->Length += GetDistanceBetweenStops(FirstStop, SecondStop);
+
+            if (!pBus->CIRCLE_ROUTE)
+            {
+                Curvature += ComputeDistance(SecondStop->Coords, FirstStop->Coords);
+                BusesMap[BusName]->Length += GetDistanceBetweenStops(SecondStop, FirstStop);
+            }
+        }
+
+        BusesMap[BusName]->Curvature = BusesMap[BusName]->Length / Curvature;
+    }
+
+    void TransportCatalogue::FindAndAddBusesForStop(const std::string_view & Stop)
+    {
+        auto StopName = std::move(Stop);
+
+        const StopInputData * pStop =  StopsMap.at(Stop);
+
+        std::set<std::string_view> FoundBuses;
+        for (const auto & Bus : Buses)
+        {
+            if (Bus.UniqueStops.find(pStop) != Bus.UniqueStops.end())
+            {
+
+               FoundBuses.emplace(Bus.RouteName);;
+            }
+        }
+        BusesForStop.emplace_front(StopName, FoundBuses, true);
+        BusesForStopMap[BusesForStop.front().StopName] = &BusesForStop.front();
     }
 
     TransportCatalogue::BusOutputData * TransportCatalogue::FindBusRoute(const std::string_view & Bus)
@@ -46,59 +93,39 @@ namespace transport_catalogue
         {
             return nullptr;
         }
-
-        double RouteLength = 0.0;
-        double Curvature = 0.0;
-        double CurvatureKoaf = 0.0;
-
-        for (auto it = pBus->BusRoutes.begin(); it < pBus->BusRoutes.end()-1; ++it)
-        {
-            auto FirstStop = *it;
-            auto SecondStopIterator = it;
-            auto SecondStop = *(++SecondStopIterator);
-
-            Curvature += ComputeDistance(SecondStop->Coords, FirstStop->Coords);
-            RouteLength += GetDistanceBetweenStops(FirstStop,SecondStop);
-
-            if (!pBus->CIRCLE_ROUTE)
-            {
-                Curvature += ComputeDistance(SecondStop->Coords, FirstStop->Coords);
-                RouteLength += GetDistanceBetweenStops(SecondStop, FirstStop);
-            }
-        }
-
-        CurvatureKoaf = RouteLength / Curvature;
+        auto RouteLength = pBus->Length;
         auto IsCirleRoute = pBus->CIRCLE_ROUTE;
         auto RouteStopsQty = pBus->BusRoutes.size();
         auto UniqueStopsQty = pBus->UniqueStops.size();
+        auto CurvatureKoaf  = pBus->Curvature;
 
         return new TransportCatalogue::BusOutputData(BusName, RouteLength, IsCirleRoute, RouteStopsQty, UniqueStopsQty, CurvatureKoaf);
     }
 
-    TransportCatalogue::StopData * TransportCatalogue::FindStopData(const std::string_view & Stop)
+    TransportCatalogue::StopOutputData * TransportCatalogue::FindStopData(const std::string_view & Stop)
     {
         auto Dummy = Stop.find(' ', 0);
-        auto StopName = Stop.substr(Dummy + 1, Stop.back());
-        const StopInputData * pStop = CheckIsStop(StopName);
+        auto StopName_ = Stop.substr(Dummy + 1, Stop.back());
+        const StopOutputData * pStop = CheckIsStopForBus(StopName_);
         if (pStop == nullptr)
         {
             return nullptr;
         }
+        auto StopName = static_cast<std::string>(pStop->StopName);
+        auto BusesForStop = pStop->BusesForStop;
+        auto IsBus = pStop->IsBus;
 
-        std::set<std::string_view> FoundBuses;
-        for (const auto & Bus : Buses)
-        {
-            if (Bus.UniqueStops.find(pStop) != Bus.UniqueStops.end())
-            {
-                FoundBuses.emplace(Bus.RouteName);
-            }
-        }
-        return new TransportCatalogue::StopData(StopName, FoundBuses);
+        return new StopOutputData(StopName, BusesForStop, IsBus);
     }
 
     const StopInputData * TransportCatalogue::CheckIsStop(const std::string_view & Stop) const
     {
         return (StopsMap.find(Stop) == StopsMap.end()) ? nullptr : StopsMap.at(Stop);
+    }
+
+    const TransportCatalogue::StopOutputData * TransportCatalogue::CheckIsStopForBus(const std::string_view & Stop) const
+    {
+        return (BusesForStopMap.find(Stop) == BusesForStopMap.end()) ? nullptr : BusesForStopMap.at(Stop);
     }
 
     const BusInputData * TransportCatalogue::CheckIsBus(const std::string_view & Bus) const

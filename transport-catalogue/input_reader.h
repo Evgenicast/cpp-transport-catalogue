@@ -9,9 +9,10 @@
 
 namespace transport_catalogue
 {
+    using NameAndExpression = std::pair<std::string_view, std::string_view>;
     namespace input
     {
-        using NameAndExpression = std::pair<std::string_view, std::string_view>;
+
         using StopCoordinates = std::pair<double, double>;
 
         struct Stop

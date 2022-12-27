@@ -12,50 +12,60 @@ namespace transport_catalogue
             return Line;
         }
 
-        int ReadLineWithNumber()
+        int ReadLineWithNumber(std::istream & in)
         {
             int Result;
-            std::cin >> Result;
-            ReadLine(std::cin);
+            in >> Result;
+            ReadLine(in);
             return Result;
         }
 
 
         void LoadData(TransportCatalogue & TC, std::istream & in)
         {
-            int n = ReadLineWithNumber();
-            std::vector<std::string> distance_data;
-            std::vector<std::string> bus_data;
-            std::string text;
-            distance_data.reserve(n);
-            bus_data.reserve(n);
+            int n = ReadLineWithNumber(in);
+            std::vector<std::string> DistanceData;
+            std::vector<std::string> BusData;
+            std::vector<std::string> StopNames;
+            std::string Query;
+            DistanceData.reserve(n);
+            BusData.reserve(n);
+
             for (int i = 0; i < n; i++)
             {
-                text = ReadLine(in);
-                if (text[0] == 'S') {
-                    distance_data.push_back(text);
+                Query = ReadLine(in);
+                if (Query[0] == 'S')
+                {
+                    DistanceData.push_back(Query);
 
-                    auto [name, lat, lng] = SplitNameAndExpressionForStop(text);
-                    TC.AddStop(name, lat, lng);
+                    auto [Name, Lat, Lng] = SplitNameAndExpressionForStop(Query);
+                    TC.AddStop(Name, Lat, Lng);
+                    StopNames.push_back(Name);
                 }
                 else
                 {
-                    bus_data.push_back(move(text));
+                    BusData.push_back(move(Query));
                 }
             }
-            if (distance_data.size() != 0)
+            if (DistanceData.size() != 0)
             {
-                for (const auto & Stop : distance_data)
+                for (const auto & Stop : DistanceData)
                 {
                     for (const auto & [StopFrom, StopTo, Distance] : SplitNameAndExpressionForStopDistance(Stop))
                     {
-                        TC.SetDistanceBetweenStops(StopFrom, StopTo, Distance); // можно сразу вывести без dummy.
+                        TC.SetDistanceBetweenStops(StopFrom, StopTo, Distance);
                     }
                 }
             }
-            for (auto & text : bus_data) {
-                auto [name, cicle, stops] = SplitNameAndExpressionForBus(text);
-                TC.AddBus(name, cicle, stops);
+            for (auto & BusName : BusData)
+            {
+                auto [Name, IsCircleRoute, Stops] = SplitNameAndExpressionForBus(BusName);
+                TC.AddBus(Name, IsCircleRoute, Stops);
+                TC.CalcAndAddLengthToBusData(Name);
+            }
+            for (auto & StopName : StopNames)
+            {
+                TC.FindAndAddBusesForStop(StopName);
             }
         }
 

@@ -36,40 +36,30 @@ namespace transport_catalogue
         void StatReader::PrintStopInfo(TransportCatalogue & TC, std::string Query, std::ostream & out)
         {
             auto StopData = TC.FindStopData(Query);
+            Query = ExtractName(Query);
 
-            out << Query << ": ";
             if(StopData == nullptr)
             {
-                out << "not found" << std::endl;
+                out << "Stop " << Query << ": not found" << std::endl;
             }
-
             else if (StopData->BusesForStop.empty())
             {
-                 out << "no buses" << std::endl;
+                out << "Stop " << Query << ": no buses" << std::endl;
             }
             else
             {
-               out << "buses";
-
-                for (const auto & Buses : StopData->BusesForStop)
+                out << "Stop " << StopData->StopName << ": buses ";
+                for (const auto & Bus : StopData->BusesForStop)
                 {
-                    out << ' ' << Buses;
+                    out << Bus << ' ';
                 }
-
                 out << std::endl;
             }
             delete StopData;
         }
 
-
         void StatReader::RequestAndOutput(TransportCatalogue & TC, std::ostream& out)
         {
-
-            //    std::ifstream f("output.txt");
-            //    if (!f)
-            //    {
-            //        out << "file not open" << std::endl;
-            //    }
 
             int QueryCount;
             std::cin >> QueryCount;
