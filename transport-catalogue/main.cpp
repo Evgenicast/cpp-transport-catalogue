@@ -1,41 +1,29 @@
-#include "transport_catalogue.h"
-#include "stat_reader.h"
-#include "input_reader.h"
-
-#include <string>
+#include "json_reader.h"
 #include <iostream>
-#include <sstream>
 #include <fstream>
 
-using namespace std;
+using namespace std::literals;
+using namespace  std;
 
 void MainTest()
 {
-//    ifstream f("./../YPTransportCatalagueBegining/DataSet/Data.txt");
-//    ifstream f("Data.txt");
+//    ifstream f("input1.json");
 //    if (!f)
 //    {
 //        cout << "file not open" << endl;
 //        return;
 //    }
 
-    transport_catalogue::TransportCatalogue tc;
-    transport_catalogue::input::LoadData(tc, std::cin);
-    transport_catalogue::output::StatReader sr;
-    sr.RequestAndOutput(tc, cout);
+    json_proccessing::JsonReader JS(std::cin);
 }
-
-
 int main()
 {
-    cout << "BEFORE: TransportCatalogue::GetCountOfBusses() = " << transport_catalogue::TransportCatalogue::GetCountOfBusses() << endl;
-    cout << "BEFORE: TransportCatalogue::GetCountOfBusses() = " << transport_catalogue::TransportCatalogue::GetCountOfStopData() << endl;
+    cout << "BEFORE: TransportCatalogue::GetCountOfBusses() = " << domain::GetCountOfBusses() << endl;
+    cout << "BEFORE: TransportCatalogue::GetCountOfBusses() = " << domain::GetCountOfStopData() << endl;
 
     MainTest();
-
-    cout << "AFTER: TransportCatalogue::GetCountOfBusses() = " << transport_catalogue::TransportCatalogue::GetCountOfBusses() << endl;
-    cout << "AFTER: TransportCatalogue::GetCountOfBusses() = " << transport_catalogue::TransportCatalogue::GetCountOfStopData() << endl;
-
+    cout << endl;
+    cout << "AFTER: TransportCatalogue::GetCountOfBusses() = " << domain::GetCountOfBusses() << endl;
+    cout << "AFTER: TransportCatalogue::GetCountOfBusses() = " << domain::GetCountOfStopData() << endl;
     return 0;
 }
-

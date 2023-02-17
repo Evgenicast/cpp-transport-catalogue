@@ -1,149 +1,143 @@
 #include "transport_catalogue.h"
+#include <utility>
 #include <algorithm>
-#include <numeric>
+
+/*static*/ int domain::BusOutputData::Count = 0;
+/*static*/ int domain::StopOutputData::cnt = 0;
 
 namespace transport_catalogue
 {
 
-    /*static*/ int TransportCatalogue::BusOutputData::Count = 0;
-    /*static*/ int TransportCatalogue::StopOutputData::cnt = 0;
 
-    TransportCatalogue::TransportCatalogue()
+    void TransportCatalogue::AddBus(const std::string_view & BusNumber, const std::vector<std::string_view> & Stops, const bool & IsCircleRoute)
     {
-        //to do !
+        std::deque<const domain::StopInputData*>StopsPTR;
+        std::unordered_set<const domain::StopInputData*> UniqueStopsPTR;
+        for (auto & stop : Stops)
+        {
+            auto FoundStop = FindStop(stop);
+            StopsPTR.emplace_back(FoundStop);
+            UniqueStopsPTR.emplace(FoundStop);
+        }
+        Buses.emplace_front(domain::BusInputData(BusNumber, IsCircleRoute, StopsPTR, UniqueStopsPTR));
+        BusesMap[Buses.front().BusNumber] = &Buses.front();
     }
 
-    void TransportCatalogue::AddStop(const std::string_view & StopName, double & LAT, const double & LNG)
+    void TransportCatalogue::AddStop(const std::string_view & StopName, const double & LAT, const double & LNG)
     {
-        Stops.emplace_front(StopName, LAT, LNG);
+        Stops.emplace_front(domain::StopInputData(StopName, LAT, LNG));
         StopsMap[Stops.front().Name] = &Stops.front();
     }
 
-    void TransportCatalogue::AddBus(const std::string_view & BusName, const bool & IsCircleRoute, const std::deque<std::string> & Stops)
+    const domain::BusInputData* TransportCatalogue::FindBus(const std::string_view & BusNumber) const
     {
-        std::unordered_set<const StopInputData*> pUniqueStops;
-        std::deque<const StopInputData*> pBusRoutes;
-
-        for (auto & Stop : Stops )
-        {
-            auto pStop = CheckIsStop(Stop);
-            pBusRoutes.emplace_back(pStop);
-            pUniqueStops.emplace(pStop);
-        }
-
-        Buses.emplace_front(BusName, IsCircleRoute, pBusRoutes, pUniqueStops, 0, 0.0);
-        BusesMap[Buses.front().RouteName] = &Buses.front();
+        return (BusesMap.find(BusNumber) == BusesMap.end()) ? nullptr : BusesMap.at(BusNumber);
     }
 
-    void TransportCatalogue::CalcAndAddLengthToBusData(const std::string_view & BusName)
+    const domain::StopInputData* TransportCatalogue::FindStop(const std::string_view & StopName) const
     {
-        double Curvature = 0.0;
-        const BusInputData * pBus = CheckIsBus(BusName);
-        if (pBus == nullptr)
-        {
-            return;
-        }
-
-        for (auto it = pBus->BusRoutes.begin(); it < pBus->BusRoutes.end()-1; ++it)
-        {
-            auto FirstStop = *it;
-            auto SecondStopIterator = it;
-            auto SecondStop = *(++SecondStopIterator);
-
-            Curvature += ComputeDistance(SecondStop->Coords, FirstStop->Coords);
-            BusesMap[BusName]->Length += GetDistanceBetweenStops(FirstStop, SecondStop);
-
-            if (!pBus->CIRCLE_ROUTE)
-            {
-                Curvature += ComputeDistance(SecondStop->Coords, FirstStop->Coords);
-                BusesMap[BusName]->Length += GetDistanceBetweenStops(SecondStop, FirstStop);
-            }
-        }
-
-        BusesMap[BusName]->Curvature = BusesMap[BusName]->Length / Curvature;
+        return (StopsMap.find(StopName) == StopsMap.end()) ? nullptr : StopsMap.at(StopName);
     }
 
-    void TransportCatalogue::FindAndAddBusesForStop(const std::string_view & Stop)
+    const domain::StopOutputData* TransportCatalogue::GetBusesByStop(const std::string_view & StopName) const
     {
-        auto StopName = std::move(Stop);
-
-        const StopInputData * pStop =  StopsMap.at(Stop);
+        const domain::StopInputData* pStop = FindStop(StopName);
+        if (pStop == nullptr)
+        {
+            return nullptr;
+        }
 
         std::set<std::string_view> FoundBuses;
         for (const auto & Bus : Buses)
         {
             if (Bus.UniqueStops.find(pStop) != Bus.UniqueStops.end())
             {
-
-               FoundBuses.emplace(Bus.RouteName);;
+                FoundBuses.emplace(Bus.BusNumber);
             }
         }
-        BusesForStop.emplace_front(StopName, FoundBuses, true);
-        BusesForStopMap[BusesForStop.front().StopName] = &BusesForStop.front();
+        return new domain::StopOutputData(pStop->Name, FoundBuses);
     }
 
-    TransportCatalogue::BusOutputData * TransportCatalogue::FindBusRoute(const std::string_view & Bus)
+    const domain::BusOutputData* TransportCatalogue::GetStopsByBus(const std::string_view & BusNumber) const
     {
-        auto Dummy = Bus.find(' ', 0);
-        auto BusName = Bus.substr(Dummy + 1, Bus.back());
-        std::vector<StopInputData*> FoundStops;
-
-        const BusInputData * pBus = CheckIsBus(BusName);
+        const domain::BusInputData* pBus = FindBus(BusNumber);
         if (pBus == nullptr)
         {
             return nullptr;
         }
-        auto RouteLength = pBus->Length;
-        auto IsCirleRoute = pBus->CIRCLE_ROUTE;
-        auto RouteStopsQty = pBus->BusRoutes.size();
-        auto UniqueStopsQty = pBus->UniqueStops.size();
-        auto CurvatureKoaf  = pBus->Curvature;
 
-        return new TransportCatalogue::BusOutputData(BusName, RouteLength, IsCirleRoute, RouteStopsQty, UniqueStopsQty, CurvatureKoaf);
-    }
+        unsigned int RouteLength = 0;
+        double Curvature = 0.0;
 
-    TransportCatalogue::StopOutputData * TransportCatalogue::FindStopData(const std::string_view & Stop)
-    {
-        auto Dummy = Stop.find(' ', 0);
-        auto StopName_ = Stop.substr(Dummy + 1, Stop.back());
-        const StopOutputData * pStop = CheckIsStopForBus(StopName_);
-        if (pStop == nullptr)
+        for (auto it = pBus->BusStops.begin(); it < pBus->BusStops.end()-1; ++it)
         {
-            return nullptr;
+            auto FirstStop = *it;
+            auto SecondStopIterator = it;
+            auto SecondStop = *(++SecondStopIterator);
+
+            Curvature += ComputeDistance(SecondStop->Coords, FirstStop->Coords);
+            RouteLength += GetDistanceBetweenStops(FirstStop,SecondStop);
+
+            if (!pBus->CIRCLE_ROUTE)
+            {
+                Curvature += ComputeDistance(SecondStop->Coords, FirstStop->Coords);
+                RouteLength += GetDistanceBetweenStops(SecondStop, FirstStop);
+            }
         }
-        auto StopName = static_cast<std::string>(pStop->StopName);
-        auto BusesForStop = pStop->BusesForStop;
-        auto IsBus = pStop->IsBus;
 
-        return new StopOutputData(StopName, BusesForStop, IsBus);
+        return new domain::BusOutputData(pBus->BusNumber, (pBus->CIRCLE_ROUTE == false) ? (pBus->BusStops.size() * 2) - 1 : pBus->BusStops.size(),
+                                         pBus->UniqueStops.size(), RouteLength, RouteLength / Curvature );
     }
 
-    const StopInputData * TransportCatalogue::CheckIsStop(const std::string_view & Stop) const
+    std::deque<const domain::StopInputData*> TransportCatalogue::GetStops(const std::string_view & BusNumber) const
     {
-        return (StopsMap.find(Stop) == StopsMap.end()) ? nullptr : StopsMap.at(Stop);
+        std::deque<const domain::StopInputData*>Stops;
+        for (const auto & stop : BusesMap.at(BusNumber)->BusStops)
+        {
+            Stops.emplace_back(stop);
+        }
+        return Stops;
     }
 
-    const TransportCatalogue::StopOutputData * TransportCatalogue::CheckIsStopForBus(const std::string_view & Stop) const
+    std::deque<const domain::BusInputData*> TransportCatalogue::GetBuses() const
     {
-        return (BusesForStopMap.find(Stop) == BusesForStopMap.end()) ? nullptr : BusesForStopMap.at(Stop);
+        std::deque<const domain::BusInputData*> Buses_;
+        for (const auto & Bus : Buses)
+        {
+            Buses_.emplace_back(&Bus);
+        }
+        std::sort(Buses_.begin(), Buses_.end(), [](const domain::BusInputData* lhs, const domain::BusInputData* rhs)
+        {
+            return lhs->BusNumber <= rhs->BusNumber;
+        });
+        return Buses_;
     }
 
-    const BusInputData * TransportCatalogue::CheckIsBus(const std::string_view & Bus) const
+    void TransportCatalogue::SetDistanceBetweenStops(const std::string_view& FromStop, const std::string_view& ToStop, const int& Distance)
     {
-        return (BusesMap.find(Bus) == BusesMap.end()) ? nullptr : BusesMap.at(Bus);
+        auto lhs = FindStop(FromStop);
+        auto rhs = FindStop(ToStop);
+        DistanceBetweenStops[std::make_pair(lhs, rhs)] = Distance;
     }
 
-    void TransportCatalogue::SetDistanceBetweenStops(const std::string_view &StopFrom_, const std::string_view &StopTo_, const int & Distance)
+    int TransportCatalogue::GetDistanceBetweenStops(const domain::StopInputData *lhs, const domain::StopInputData *rhs) const
     {
-        auto pStopFrom = CheckIsStop(StopFrom_);
-        auto pStopTo = CheckIsStop(StopTo_);
-        DistanceBetweenStops[std::make_pair(pStopFrom, pStopTo)] = Distance;
+        return (DistanceBetweenStops.find(std::make_pair(lhs, rhs)) == DistanceBetweenStops.end()) ?
+                DistanceBetweenStops.at(std::make_pair(rhs, lhs)) :
+                DistanceBetweenStops.at(std::make_pair(lhs, rhs));
+
     }
 
-    int TransportCatalogue::GetDistanceBetweenStops(const StopInputData * StopFrom, const StopInputData * StopTo) const
+    const std::vector<geo::Coordinates> TransportCatalogue::GetStopsCoordinates() const
     {
-        return (DistanceBetweenStops.find(std::make_pair(StopFrom, StopTo)) == DistanceBetweenStops.end()) ?
-                DistanceBetweenStops.at(std::make_pair(StopTo, StopFrom)) :
-                DistanceBetweenStops.at(std::make_pair(StopFrom, StopTo));
+        std::vector<geo::Coordinates>StopCoordinates;
+        for (const auto & bus : Buses)
+        {
+            for (const auto & stop : bus.BusStops)
+            {
+                StopCoordinates.emplace_back(stop->Coords);
+            }
+        }
+        return StopCoordinates;
     }
-}//transport_catalogue
+} // namespace transport_catalogue
