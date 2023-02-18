@@ -61,7 +61,7 @@ namespace json
 
 		const Node& GetRoot() const
 		{
-			return root_;
+            return root_;
 		}
 	};
 
