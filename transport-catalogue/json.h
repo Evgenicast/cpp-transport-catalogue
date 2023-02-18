@@ -50,7 +50,6 @@ namespace json
 
 	class Document
 	{
-
     private:
 
         Node root_;
