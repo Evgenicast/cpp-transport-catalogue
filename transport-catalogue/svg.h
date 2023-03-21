@@ -14,7 +14,7 @@ namespace svg
 	struct Point
 	{
 		Point() = default;
-        Point(const double & x, const double& y);
+        Point(const double & x, const double & y);
 
         double x = 0;
         double y = 0;
@@ -36,11 +36,8 @@ namespace svg
 	class Object
 	{
     private:
-
         virtual void RenderObject(const RenderContext& context) const = 0;
-
 	public:
-
 		void Render(const RenderContext& context) const;
 		virtual ~Object() = default;
 	};
@@ -88,7 +85,6 @@ namespace svg
 	class PathProps
 	{
     private:
-
         std::optional<Color>          fill_color_;
         std::optional<Color>          stroke_color_;
         std::optional<double>         stroke_width_;
@@ -135,9 +131,7 @@ namespace svg
                     << rgba.opacity << ")"sv;
             }
         };
-
 	public:
-
         Owner & SetFillColor(const Color& color)
 		{
 			fill_color_ = std::move(color);
@@ -167,9 +161,7 @@ namespace svg
 			line_join_ = line_join;
 			return AsOwner();
 		}
-
 	protected:
-
 		~PathProps() = default;
 
 		void RenderAttrs(std::ostream& out) const
@@ -202,41 +194,30 @@ namespace svg
 			}
 		}
 	};
-
 	class Circle final: public Object, public PathProps<Circle>
     {
     private:
-
         Point Center;
         double Radius = 1.0;
 
         void RenderObject(const RenderContext & context) const override;
-
 	public:
-
         Circle & SetCenter(const Point & Center_);
         Circle & SetRadius(const double & Radius_);
 	};
 
 	class Polyline: public Object, public PathProps<Polyline>
     {
-
     private:
-
         std::vector<Point> Points;
-        void RenderObject(const RenderContext& context) const override;
-
+        void RenderObject(const RenderContext & context) const override;
 	public:
-
         Polyline& AddPoint(const Point & Point);
-
 	};
 
 	class Text: public Object, public PathProps<Text>
     {
-
     private:
-
         Point Position;
         Point Offset;
         uint32_t FontSize = 1;
@@ -245,9 +226,7 @@ namespace svg
         std::string Data;
 
         void RenderObject(const RenderContext& context) const override;
-
 	public:
-
         Text & SetPosition(const Point & Pos_);
         Text & SetOffset(const Point & Offset_);
         Text & SetFontSize(const uint32_t & FontSize_);
@@ -259,17 +238,14 @@ namespace svg
     class ObjectContainer
 	{
 	public:
-
 		template<typename T>
 		void Add(T obj)
 		{
             Objects.emplace_back(std::make_shared<T>(std::move(obj)));
 		}
 
-        virtual void AddPtr(std::shared_ptr<Object>&& obj) = 0;
-
+        virtual void AddPtr(std::shared_ptr<Object> && obj) = 0;
 	protected:
-
 		virtual ~ObjectContainer() = default;
         std::deque<std::shared_ptr<Object>> Objects;
 	};
@@ -277,7 +253,6 @@ namespace svg
 	class Drawable
 	{
 	public:
-
         virtual void Draw(ObjectContainer & container) const = 0;
 		virtual ~Drawable() = default;
 	};
@@ -285,7 +260,6 @@ namespace svg
 	class Document final : public ObjectContainer
 	{
 	public:
-
         void AddPtr(std::shared_ptr<Object> && obj) override;
         void Render(std::ostream & out) const;
 	};

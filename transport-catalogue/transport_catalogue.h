@@ -11,15 +11,12 @@ namespace transport_catalogue
     class TransportCatalogue
     {
     private:
-
         std::deque<domain::BusInputData> Buses;
         std::deque<domain::StopInputData> Stops;
         std::unordered_map<std::string_view, const domain::BusInputData*> BusesMap;
         std::unordered_map<std::string_view, const domain::StopInputData*> StopsMap;
         std::unordered_map<std::pair<const domain::StopInputData*, const domain::StopInputData*>, int, domain::StopsDistPtrPairHasher> DistanceBetweenStops;
-
     public:
-
         TransportCatalogue() = default;
         TransportCatalogue(TransportCatalogue &) = delete;
         TransportCatalogue & operator=(TransportCatalogue &) noexcept = delete;
@@ -41,7 +38,5 @@ namespace transport_catalogue
         void SetDistanceBetweenStops(const std::string_view & FromStop, const std::string_view & ToStop, const int & Distance);
         int GetDistanceBetweenStops(const domain::StopInputData * lhs, const domain::StopInputData * rhs) const;
         const std::vector<geo::Coordinates> GetStopsCoordinates() const;
-
     };
-
 } // namespace transport_catalogue

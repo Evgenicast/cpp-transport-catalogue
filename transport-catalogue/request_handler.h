@@ -6,18 +6,15 @@
 class RequestHandler
 {
 private:
-
     const transport_catalogue::TransportCatalogue & TC;  
     const renderer::MapRenderer & Renderer;
-
 public:
-
     RequestHandler() = delete;
     RequestHandler(const transport_catalogue::TransportCatalogue & TC, const renderer::MapRenderer & Renderer_)
-        : TC(TC), Renderer(Renderer_) {};
+    : TC(TC), Renderer(Renderer_) {};
 
-    RequestHandler(RequestHandler &) = delete;
-    RequestHandler & operator=(RequestHandler &) = delete;
+    RequestHandler(const RequestHandler &) = delete;
+    RequestHandler & operator=(const RequestHandler &) = delete;
     RequestHandler(RequestHandler &&) noexcept = delete;
     RequestHandler & operator=(RequestHandler &&) noexcept = delete;
 

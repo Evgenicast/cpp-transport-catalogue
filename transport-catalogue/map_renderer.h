@@ -87,12 +87,9 @@ namespace renderer
         class StopPointRender : public svg::Drawable
         {
         private:
-
             svg::Point StopCoordinates;
             const RenderSettings & RenderSettingsData;
-
         public:
-
             StopPointRender(const svg::Point & StopCoordinates_, const RenderSettings & RenderSettings_);
             void Draw(svg::ObjectContainer & Objects) const override;
         };
@@ -101,34 +98,26 @@ namespace renderer
         class TextRender : public svg::Drawable
         {
         private:
-
             svg::Point Coord;
             std::string Data;
             svg::Color Fill;
             bool Stop;
 
             const RenderSettings & RenderSettings_;
-
         public:
-
             TextRender(const svg::Point & Coord_, const std::string_view & Data_, const svg::Color & Fill_, const bool & Stop_, const RenderSettings & RenderSettingsData);
             void Draw(svg::ObjectContainer & Object) const override;
             svg::Text CreateText() const;
             svg::Text CreateCanvas() const;
-
         };
 
         class RouteRender : public svg::Drawable
         {
-
         private:
-
             std::vector<svg::Point> StopCoords;
             svg::Color StrokeColor;
             const RenderSettings & RenderSettings_;
-
         public:
-
             RouteRender(const std::vector<svg::Point> & StopCoords_, const svg::Color & StrokeColor_, const RenderSettings & RenderSettingsData);
             void Draw(svg::ObjectContainer & Object) const override;
         };
@@ -142,7 +131,7 @@ namespace renderer
         double LineWidth = 0.0;
         double StopRadius = 0.0;
         int BusLabelFontSize = 0;
-        svg::Point BusLabelOffset{ 0.0, 0.0 };
+        svg::Point BusLabelOffset;
         int StopLabelFontSize = 0;
         svg::Point StopLabelOffset{ 0.0, 0.0 };
         svg::Color UnderLayerColor;
@@ -152,17 +141,13 @@ namespace renderer
 
     class MapRenderer
     {
-
     private:
-
         std::vector<draw::RouteRender> RoutesRenders;
         std::vector<draw::TextRender> RouteNamesRenders;
         std::vector<draw::StopPointRender> StopsPointsRenders;
         std::vector<draw::TextRender> StopsNamesRenders;
         RenderSettings RenderSettings_;
-
     public:
-
         MapRenderer() = default;
         MapRenderer(const MapRenderer &) = delete;
         MapRenderer operator=(MapRenderer &) = delete;

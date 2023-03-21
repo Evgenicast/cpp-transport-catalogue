@@ -1,4 +1,5 @@
 #include "json_reader.h"
+#include "json_builder.h"
 #include <sstream>
 #include <fstream>
 #include <map>
@@ -160,10 +161,9 @@ void JsonReader::ReadRenderSettings(transport_catalogue::TransportCatalogue & TC
 json::Array JsonReader::ReadStatRequest(const RequestHandler & RequestHandler)
 {
     const auto ObjectBase = Object.find("stat_requests");
-    json::Array OutputData;
     if (ObjectBase != Object.end())
     {
-        for (const auto& request : ObjectBase->second.AsArray())
+        for (const auto & request : ObjectBase->second.AsArray())
         {
             const auto request_type= request.AsDict().find("type");
             if (request_type!= request.AsDict().end())
@@ -182,6 +182,11 @@ json::Array JsonReader::ReadStatRequest(const RequestHandler & RequestHandler)
                 }
             }
         }
+    }
+
+    if (BusDataPtr.has_value())
+    {
+        delete BusDataPtr.value();
     }
     return OutputData;
 }
@@ -216,31 +221,23 @@ void JsonReader::ReadBusData(transport_catalogue::TransportCatalogue & TC, const
     TC.AddBus(BusName, Stops, IsCircleRoute);
 }
 
-const json::Dict JsonReader::GetBusInfo(const RequestHandler & RequestHandler, const json::Dict & Dict)
+const json::Node JsonReader::GetBusInfo(const RequestHandler & RequestHandler, const json::Dict & Dict)
 {
-    const auto BusName = Dict.at("name").AsString();
-    const auto BusData = RequestHandler.GetBusData(BusName);
-    json::Dict BusInfo;
-    if (BusData == nullptr)
-    {
-        BusInfo.emplace("request_id", Dict.at("id").AsInt());
-        BusInfo.emplace("error_message", "not found");
-    }
-    else
-    {
-        BusInfo.emplace("curvature", BusData.value()->GetCurvature());
-        BusInfo.emplace("request_id", Dict.at("id").AsInt());
-        BusInfo.emplace("route_length", static_cast<int>(BusData.value()->GetRouteLength()));
-        BusInfo.emplace("stop_count", BusData.value()->GetStopsCount());
-        BusInfo.emplace("unique_stop_count", static_cast<int>(BusData.value()->GetUniqueStopsCount()));
-    }
 
-    if (BusData.has_value())
-    {
-        delete BusData.value(); //если тут не удалить, то - утечка памяти. См. Тесты в Мейн.
-    }
+    const std::string BusName = Dict.at("name").AsString();
+    BusDataPtr = RequestHandler.GetBusData(BusName);
 
-    return BusInfo;
+    return (BusDataPtr == nullptr) ? json::Builder{}.StartDict()
+        .Key("request_id").Value(Dict.at("id").AsInt())
+        .Key("error_message").Value("not found")
+        .EndDict().Build().AsDict()
+        : json::Builder{}.StartDict()
+        .Key("curvature").Value(BusDataPtr.value()->GetCurvature())
+        .Key("request_id").Value(Dict.at("id").AsInt())
+        .Key("route_length").Value(static_cast<int>(BusDataPtr.value()->GetRouteLength()))
+        .Key("stop_count").Value(BusDataPtr.value()->GetStopsCount())
+        .Key("unique_stop_count").Value(static_cast<int>(BusDataPtr.value()->GetUniqueStopsCount()))
+        .EndDict().Build();
 }
 
 const json::Dict JsonReader::GetStopInfo(const RequestHandler & RequestHandler, const json::Dict & Dict)
@@ -268,7 +265,7 @@ const json::Dict JsonReader::GetStopInfo(const RequestHandler & RequestHandler, 
 
     if (StopData.has_value())
     {
-        delete StopData.value(); //если тут не удалить, то - утечка памяти. См. Тесты в Мейн.
+        delete StopData.value();
     }
     return StopInfo;
 }

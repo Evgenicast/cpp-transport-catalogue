@@ -41,9 +41,7 @@ namespace domain
         size_t UniqueStopsCount;
         unsigned int RouteLength;
         double Curvature;
-
     public:
-
         BusOutputData(const std::string_view & BusNumber_, const size_t & StopsCount_, const size_t & UniqueStopsCount_, const unsigned int & RouteLength_,
         const double & Curvature_)
         : BusNumber(BusNumber_), StopsCount(StopsCount_), UniqueStopsCount(UniqueStopsCount_), RouteLength(RouteLength_), Curvature(Curvature_)
@@ -68,13 +66,10 @@ namespace domain
     class StopOutputData
     {
     private:
-
          static int cnt;
          std::string StopName;
          std::set<std::string_view> BusesForStop;
-
     public:
-
         StopOutputData(const std::string_view & StopName_, const std::set<std::string_view> & BusesForStop_)
         : StopName(StopName_), BusesForStop(BusesForStop_)
         {
@@ -85,26 +80,25 @@ namespace domain
 
         StopOutputData(const StopOutputData &) = delete;
         StopOutputData(StopOutputData &&) noexcept = delete;
+
         StopOutputData & operator=(const StopOutputData &) = delete;
         StopOutputData & operator=(StopOutputData &&) noexcept = delete;
 
         const std::string & GetStopName() const { return StopName; }
         const std::set<std::string_view> & GetBusesForStop () const { return BusesForStop; }
-
     };
 
     class StopsDistPtrPairHasher
     {
     private:
-
         std::hash<const void*> PairHasher;
-
     public:
-        size_t operator() (const std::pair<const StopInputData *, const StopInputData *> & Stop) const
+        size_t operator() (const std::pair<const StopInputData*, const StopInputData*> & Stop) const
         {
             return PairHasher(Stop.first) + (PairHasher(Stop.second) * 29);
         }
     };
-    [[maybe_unused]]static int GetCountOfBusses() {return BusOutputData::GetCount();}
-    [[maybe_unused]]static int GetCountOfStopData() {return StopOutputData::GetCount();}
+
+    inline int GetCountOfBusses() {return BusOutputData::GetCount();}
+    inline int GetCountOfStopData() {return StopOutputData::GetCount();}
 }// namespace domain

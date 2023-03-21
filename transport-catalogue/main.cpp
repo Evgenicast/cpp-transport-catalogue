@@ -7,14 +7,14 @@ using namespace  std;
 
 void MainTest()
 {
-//    ifstream f("input1.json");
-//    if (!f)
-//    {
-//        cout << "file not open" << endl;
-//        return;
-//    }
+    ifstream f("input.json");
+    if (!f)
+    {
+        cout << "file not open" << endl;
+        return;
+    }
 
-    json_proccessing::JsonReader JS(std::cin);
+    json_proccessing::JsonReader JS(f);
 }
 int main()
 {

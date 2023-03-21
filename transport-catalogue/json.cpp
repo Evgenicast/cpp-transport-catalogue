@@ -51,6 +51,11 @@ namespace json
         return (!IsArray()) ? throw std::logic_error("Error! An Array type is expected") : std::get<Array>(*this);
     }
 
+    Array & Node::AsArray()
+    {
+        return (!IsArray()) ? throw std::logic_error("Error! An Array type is expected") : std::get<Array>(*this);
+    }
+
     bool Node::IsString() const
     {
         return std::holds_alternative<std::string>(*this);
@@ -67,6 +72,11 @@ namespace json
     }
 
     const Dict & Node::AsDict() const
+    {
+        return (!IsMap()) ? throw std::logic_error("Error! A Dict type is expected") : std::get<Dict>(*this);
+    }
+
+    Dict & Node::AsDict()
     {
         return (!IsMap()) ? throw std::logic_error("Error! A Dict type is expected") : std::get<Dict>(*this);
     }

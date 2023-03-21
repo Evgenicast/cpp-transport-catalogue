@@ -1,5 +1,3 @@
-#ifndef JSON_H
-#define JSON_H
 #pragma once
 #include <iostream>
 #include <map>
@@ -12,18 +10,15 @@ namespace json
     using Dict = std::map<std::string, Node>;
     using Array = std::vector<Node>;
 
-    class ParsingError
-        : public std::runtime_error
+    class ParsingError : public std::runtime_error
     {
     public:
-
         using runtime_error::runtime_error;
     };
 
     class Node final : private std::variant<std::nullptr_t, Array, Dict, bool, int, double, std::string>
     {
     public:
-
         using variant::variant;
         using Value = variant;
 
@@ -36,11 +31,18 @@ namespace json
         bool AsBool() const;
         bool IsNull() const;
         bool IsArray() const;
-        const Array & AsArray() const;
-        bool IsString() const;
-        const std::string & AsString() const;
         bool IsMap() const;
+        bool IsString() const;
+
+        const Array & AsArray() const;
+        Array & AsArray();
+
         const Dict & AsDict() const;
+        Dict & AsDict();
+
+        const std::string & AsString() const;
+
+
         bool operator==(const Node& rhs) const;
         const Value & GetValue() const;
     };
@@ -53,11 +55,8 @@ namespace json
     class Document
     {
     private:
-
         Node root_;
-
     public:
-
         explicit Document(Node root)
             : root_(std::move(root)) {}
 
@@ -82,5 +81,3 @@ namespace json
     void Print(const Document & Doc, std::ostream & Output);
 
 } // namespace json
-
-#endif // JSON_H
