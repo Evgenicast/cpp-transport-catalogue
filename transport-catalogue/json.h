@@ -23,10 +23,8 @@ namespace json
         using Value = variant;
 
         bool IsInt() const;
-        int AsInt()  const;
         bool IsPureDouble() const;
         bool IsDouble() const;
-        double AsDouble() const;
         bool IsBool() const;
         bool AsBool() const;
         bool IsNull() const;
@@ -34,12 +32,12 @@ namespace json
         bool IsMap() const;
         bool IsString() const;
 
+        int AsInt()  const;
+        double AsDouble() const;
         const Array & AsArray() const;
         Array & AsArray();
-
         const Dict & AsDict() const;
         Dict & AsDict();
-
         const std::string & AsString() const;
 
 

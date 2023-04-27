@@ -94,6 +94,10 @@ namespace svg
         Owner & AsOwner()
         {
             return static_cast<Owner&>(*this);
+//            if (auto p = dynamic_cast<Owner*>(this); p)
+//                return *p;
+//            else
+//                throw std::logic_error("smth's wrong with types");
         }
 
         struct ColorPrinter

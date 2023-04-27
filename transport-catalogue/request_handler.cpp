@@ -1,17 +1,20 @@
 #include "request_handler.h"
 
-std::optional<const domain::BusOutputData*> RequestHandler::GetBusData(const std::string_view & BusName) const
+RequestHandler::RequestHandler(const TransportRouter & TransportRouter, const renderer::MapRenderer & Renderer)
+: m_TransportRouterRef(TransportRouter), m_RendererRef(Renderer){}
+
+std::optional<const tc_request::Bus*> RequestHandler::GetBusData(const std::string_view & BusName) const
 {
-    return TC.GetStopsByBus(BusName);
+    return m_TransportRouterRef.GetStopsByBus(BusName);
 }
 
-std::optional<const domain::StopOutputData*> RequestHandler::GetStopData(const std::string_view & StopData) const
+std::optional<const tc_request::Stop *> RequestHandler::GetStopData(const std::string_view & StopData) const
 {
 
-    return TC.GetBusesByStop(StopData);
+    return m_TransportRouterRef.GetBusesByStop(StopData);
 }
 
 svg::Document RequestHandler::RenderMap() const
 {
-    return Renderer.GetRender();
+    return m_RendererRef.GetRender();
 }

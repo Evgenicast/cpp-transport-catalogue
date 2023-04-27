@@ -107,12 +107,13 @@ namespace json
     Node LoadArray(std::istream & input)
     {
         std::vector<Node> Result;
-
+        std::string test; // test for
         for (char c; input >> c && c != ']';)
         {
             if (c != ',')
             {
                 input.putback(c);
+                test.push_back(c);
             }
             Result.push_back(LoadNode(input));
         }
