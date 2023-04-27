@@ -17,6 +17,8 @@ namespace transport_catalogue
             StopsDeque.emplace_back(FoundStop);
             UniqueStopsUnSet.emplace(FoundStop);
         }
+//      Buses.push_front(domain::BusInputData(BusNumber, IsCircleRoute, StopsPTR, UniqueStopsPTR)); // C++'98 style
+//      Buses.push_front({BusNumber, IsCircleRoute, StopsPTR, UniqueStopsPTR}); // modern style, temp obj is created
         m_BusesDeque.emplace_front(BusNumber, IsCircleRoute, StopsDeque, UniqueStopsUnSet); // best version, cos temp obj is not created
         m_BusesUnMap[m_BusesDeque.front().m_BusNumber] = &m_BusesDeque.front();
     }

@@ -1,6 +1,8 @@
 #ifndef TRANSPORT_ROUTER_H
 #define TRANSPORT_ROUTER_H
 
+//#define KOAF(a,b) ({a/b})
+
 #pragma once
 
 #include "transport_catalogue.h"
@@ -11,7 +13,6 @@ class TransportRouter : public transport_catalogue::TransportCatalogue
 {
 public:
 
-    using Speed = double; using Wait = size_t;
     struct Item
     {
         Item() = default;
@@ -20,10 +21,10 @@ public:
         Item & operator=(const Item &) = delete;
         Item & operator=(Item &&) noexcept = delete;
 
-        std::string Name;
-        int SpanCount = 0;
-        double Time = 0.0;
-        graph::EdgeType Type;
+        std::string m_Name;
+        int m_SpanCount = 0;
+        double m_Time = 0.0;
+        graph::EdgeType m_Type;
     };
 
     struct RouteData
@@ -34,33 +35,39 @@ public:
         RouteData & operator=(const RouteData &) = delete;
         RouteData & operator=(RouteData &&) noexcept = delete;
 
-        double TotalTime = 0.0;
-        std::deque<Item> Items;
-        bool Isfound = false;
+        double m_TotalTime = 0.0;
+        std::deque<Item> m_ItemsDeque;
+        bool m_Isfound = false;
     };
 
 private:
-    graph::Router<double> * RouterPtr_raw = nullptr;
-    graph::DirectedWeightedGraph<double> GraphObj_;
-    std::unordered_map<std::string_view, size_t> VertexWait;
-    std::unordered_map<std::string_view, size_t> VertexDistance;
 
-    Wait BusWaitTime = 0; Speed BusVelocity = 0.0;
+    graph::Router<double> * m_RouterPtr = nullptr;
+    graph::DirectedWeightedGraph<double> m_Graph;
+    std::unordered_map<std::string_view, size_t> m_VertexWaitUnMap;
+    std::unordered_map<std::string_view, size_t> m_VertexDistanceUnMap;
+
+    size_t m_BusWaitTime = 0;
+    double m_BusVelocity = 0.0;
+    static constexpr double s_Minute = 60;
+    static constexpr double s_Meter = 1000;
+
 public:
+
     TransportRouter();
     TransportRouter(const TransportRouter &) = delete;
     TransportRouter(TransportRouter &&) noexcept = delete;
     TransportRouter & operator=(const TransportRouter &) = delete;
     TransportRouter & operator=(TransportRouter &&) noexcept = delete;
 
-    void SetRouteData(const int BusWaitTime_, const double BusVelocity_);
+    void SetRouteData(const int BusWaitTime, const double BusVelocity);
     const RouteData GetRoute(const std::string_view From, const std::string_view To);
     void ConstructGraph();
     void ConstructWaitEdge();
     void ConstructBusEdge();
     ~TransportRouter()
     {
-         delete RouterPtr_raw;
+         delete m_RouterPtr;
     }
 };
 

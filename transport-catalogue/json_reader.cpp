@@ -196,33 +196,33 @@ namespace json_proccessing
     json::Node JsonReader::GetRoute(TransportRouter & TransportRouter, const json::Dict & Dict)
     {
         auto RouteData = TransportRouter.GetRoute(Dict.at("from").AsString(), Dict.at("to").AsString());
-        if (!RouteData.Isfound)
+        if (!RouteData.m_Isfound)
         {
             return json::Builder{}.StartDict().Key("request_id").Value(Dict.at("id").AsInt())
             .Key("error_message").Value("not found").EndDict().Build().AsDict();
         }
 
         json::Array Items;
-        for(const auto & Item : RouteData.Items)
+        for (const auto & Item : RouteData.m_ItemsDeque)
         {
             json::Dict ItemsMap;
-            if(Item.Type == graph::EdgeType::BUS)
+            if(Item.m_Type == graph::EdgeType::BUS)
             {
                 ItemsMap["type"] = "Bus";
-                ItemsMap["bus"] = Item.Name;
-                ItemsMap["span_count"] = Item.SpanCount;
+                ItemsMap["bus"] = Item.m_Name;
+                ItemsMap["span_count"] = Item.m_SpanCount;
             }
-            else if(Item.Type == graph::EdgeType::WAIT)
+            else if(Item.m_Type == graph::EdgeType::WAIT)
             {
                 ItemsMap["type"] = "Wait";
-                ItemsMap["stop_name"] = Item.Name;
+                ItemsMap["stop_name"] = Item.m_Name;
             }
-            ItemsMap["time"] = Item.Time;
+            ItemsMap["time"] = Item.m_Time;
             Items.push_back(ItemsMap);
         }
         return json::Builder{}.StartDict()
         .Key("request_id").Value(Dict.at("id").AsInt())
-        .Key("total_time").Value(RouteData.TotalTime)
+        .Key("total_time").Value(RouteData.m_TotalTime)
         .Key("items").Value(Items)
         .EndDict().Build().AsDict();
     }

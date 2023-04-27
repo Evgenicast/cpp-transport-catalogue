@@ -4,41 +4,39 @@
 TransportRouter::TransportRouter()
 {}
 
-void TransportRouter::SetRouteData(const int BusWaitTime_, const double BusVelocity_)
+void TransportRouter::SetRouteData(const int BusWaitTime, const double BusVelocity)
 {
-    BusWaitTime = BusWaitTime_;
-    BusVelocity = BusVelocity_;
+    m_BusWaitTime = BusWaitTime;
+    m_BusVelocity = BusVelocity;
 }
 
 void TransportRouter::ConstructGraph()
 {
-    GraphObj_.SetSize(GetAllStops().size() * 2);
+    m_Graph.SetSize(GetAllStops().size() * 2);
     ConstructWaitEdge();
     ConstructBusEdge();
 
-    RouterPtr_raw = new graph::Router<double>(GraphObj_);
+    m_RouterPtr = new graph::Router<double>(m_Graph);
 }
 
 const TransportRouter::RouteData TransportRouter::GetRoute(const std::string_view From, const std::string_view To)
 {
-    if(!RouterPtr_raw)
+    if(!m_RouterPtr)
     {
         ConstructGraph();
     }
 
     RouteData RouteDataTmp;
-    auto RouterTmp = RouterPtr_raw->BuildRoute(VertexWait.at(From), VertexWait.at(To));
+    auto RouterTmp = m_RouterPtr->BuildRoute(m_VertexWaitUnMap.at(From), m_VertexWaitUnMap.at(To));
     if(RouterTmp)
     {
-        RouteDataTmp.Isfound = true;
+        RouteDataTmp.m_Isfound = true;
         for(const auto & Router : RouterTmp->edges)
         {
-            auto EdgeTmp = GraphObj_.GetEdge(Router);
-            RouteDataTmp.TotalTime += EdgeTmp.weight;
-            RouteDataTmp.Items.push_back(Item({EdgeTmp.Name,
-                                   (EdgeTmp.Type == graph::EdgeType::BUS) ? EdgeTmp.SpanCount : 0,
-                                   EdgeTmp.weight,
-                                   EdgeTmp.Type}));
+            auto EdgeTmp = m_Graph.GetEdge(Router);
+            RouteDataTmp.m_TotalTime += EdgeTmp.weight;
+            RouteDataTmp.m_ItemsDeque.push_back(Item({EdgeTmp.Name, (EdgeTmp.Type == graph::EdgeType::BUS) ?
+                                               EdgeTmp.SpanCount : 0, EdgeTmp.weight, EdgeTmp.Type}));
 
         }
     }
@@ -50,12 +48,10 @@ void TransportRouter::ConstructWaitEdge()
     int VertexID = 0;
     for (const auto & Stop : GetAllStops()) //EDGE WAIT
     {
-        VertexWait.insert({Stop->m_Name, VertexID});
-        VertexDistance.insert({Stop->m_Name, ++VertexID});
-        GraphObj_.AddEdge({VertexWait.at(Stop->m_Name),
-                          VertexDistance.at(Stop->m_Name),
-                          static_cast<double>(BusWaitTime),
-                          Stop->m_Name, graph::EdgeType::WAIT, 0});
+        m_VertexWaitUnMap.insert({Stop->m_Name, VertexID});
+        m_VertexDistanceUnMap.insert({Stop->m_Name, ++VertexID});
+        m_Graph.AddEdge({m_VertexWaitUnMap.at(Stop->m_Name), m_VertexDistanceUnMap.at(Stop->m_Name),
+                        static_cast<double>(m_BusWaitTime), Stop->m_Name, graph::EdgeType::WAIT, 0});
         ++VertexID;
     }
 }
@@ -74,10 +70,10 @@ void TransportRouter::ConstructBusEdge()
                 {
                     RouteDistance += ComputeDistance(Route->m_BusStopsDeque[Iter - 1], Route->m_BusStopsDeque[Iter]);
                 }
-                GraphObj_.AddEdge({VertexDistance.at(Route->m_BusStopsDeque[BusFrom_it]->m_Name),
-                                 VertexWait.at(Route->m_BusStopsDeque[BusTo_it]->m_Name),
-                                 RouteDistance / (BusVelocity * 1000.0 / 60.0),
-                                   Route->m_BusNumber, graph::EdgeType::BUS, ++SpanCount});
+                m_Graph.AddEdge({m_VertexDistanceUnMap.at(Route->m_BusStopsDeque[BusFrom_it]->m_Name),
+                                 m_VertexWaitUnMap.at(Route->m_BusStopsDeque[BusTo_it]->m_Name),
+                                 RouteDistance / (m_BusVelocity * s_Meter / s_Minute),
+                                 Route->m_BusNumber, graph::EdgeType::BUS, ++SpanCount});
             }
         }
         if(!Route->m_IsCircleRoute)
@@ -92,11 +88,10 @@ void TransportRouter::ConstructBusEdge()
                     {
                         RouteDistance += ComputeDistance(Route->m_BusStopsDeque[Iter], Route->m_BusStopsDeque[Iter - 1]);
                     }
-                   GraphObj_.AddEdge({VertexDistance.at(Route->m_BusStopsDeque[BusFrom_it]->m_Name),
-                     VertexWait.at(Route->m_BusStopsDeque[BusTo_it]->m_Name),
-                     RouteDistance /
-                     (BusVelocity * static_cast<Speed>(1000) / static_cast<Speed>(60)), //static constexpr Speed!!
-                     Route->m_BusNumber, graph::EdgeType::BUS, ++SpanCount});           // сделать в т.ч. для  60.0
+                    m_Graph.AddEdge({m_VertexDistanceUnMap.at(Route->m_BusStopsDeque[BusFrom_it]->m_Name),
+                                     m_VertexWaitUnMap.at(Route->m_BusStopsDeque[BusTo_it]->m_Name),
+                                     RouteDistance / (m_BusVelocity * s_Meter / s_Minute),
+                                     Route->m_BusNumber, graph::EdgeType::BUS, ++SpanCount});
                 }
             }
         }
