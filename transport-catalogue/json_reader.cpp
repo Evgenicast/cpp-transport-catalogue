@@ -8,15 +8,16 @@ namespace json_proccessing
 {
     JsonReader::JsonReader(std::istream & Input)
     {
-        m_JsonObject = json::Load(Input).GetRoot().AsDict(); //можно локально, но данные файла могут понадобитсья.
-        ReadBaseRequest(m_TransportRouter);
-        ReadRouteSettings(m_TransportRouter);
-        ReadRenderSettings(m_TransportRouter, m_MapRenderer);
-        const auto DocumentOutput = ReadStatRequest(RequestHandler(m_TransportRouter, m_MapRenderer));
+        m_JsonObject = json::Load(Input).GetRoot().AsDict();
+        ReadBaseRequest(m_TransportCatalogue);
+        TransportRouter TransportRouter(m_TransportCatalogue);
+        ReadRouteSettings(TransportRouter);
+        ReadRenderSettings(m_TransportCatalogue, m_MapRenderer);
+        const auto DocumentOutput = ReadStatRequest(RequestHandler(m_TransportCatalogue, m_MapRenderer), TransportRouter);
         json::Print(json::Document(json::Builder{}.Value(DocumentOutput).Build()), std::cout);
     }
 
-    void JsonReader::ReadBaseRequest(TransportRouter & TransportRouter)
+    void JsonReader::ReadBaseRequest(transport_catalogue::TransportCatalogue & m_TransportCatalogue)
     {
         const auto ObjectBase = m_JsonObject.find("base_requests");
         if (ObjectBase != m_JsonObject.end())
@@ -28,7 +29,7 @@ namespace json_proccessing
                 {
                     if (RequestType->second.AsString() == "Stop")
                     {
-                        ReadStopData(TransportRouter, Request.AsDict());
+                        ReadStopData(m_TransportCatalogue, Request.AsDict());
                     }
                 }
             }
@@ -40,7 +41,7 @@ namespace json_proccessing
                 {
                     if (RequestType->second.AsString() == "Stop")
                     {
-                        ReadStopDistance(TransportRouter, Request.AsDict());
+                        ReadStopDistance(m_TransportCatalogue, Request.AsDict());
                     }
                 }
             }
@@ -52,7 +53,7 @@ namespace json_proccessing
                 {
                     if (RequestType->second.AsString() == "Bus")
                     {
-                        ReadBusData(TransportRouter, Request.AsDict());
+                        ReadBusData(m_TransportCatalogue, Request.AsDict());
                     }
                 }
             }
@@ -69,7 +70,7 @@ namespace json_proccessing
         }
     }
 
-    void JsonReader::ReadRenderSettings(TransportRouter & TransportRouter, renderer::MapRenderer & MapRenderer)
+    void JsonReader::ReadRenderSettings(transport_catalogue::TransportCatalogue & m_TransportCatalogue, renderer::MapRenderer & MapRenderer)
     {
         const auto RenderSettings = m_JsonObject.find("render_settings");
         if (RenderSettings != m_JsonObject.end())
@@ -92,16 +93,16 @@ namespace json_proccessing
             }
             MapRenderer.SetRenderSettings(Settings);
 
-            const auto StopsCoordinates = TransportRouter.GetStopsCoordinates();
+            const auto StopsCoordinates = m_TransportCatalogue.GetStopsCoordinates();
             renderer::utilites::SphereProjector Projector(StopsCoordinates.begin(), StopsCoordinates.end(), Settings.Width, Settings.Height, Settings.Padding);
             const std::vector<svg::Color> ColorPallete = MapRenderer.GetColorPallete();
             size_t ColorNumber = 0;
             std::map<std::string, svg::Point> Stops;
 
-            for (const auto & it : TransportRouter.GetBuses())
+            for (const auto & it : m_TransportCatalogue.GetBuses())
             {
                 std::vector<svg::Point> StopsPoints;
-                for (const auto & stop : TransportRouter.GetStops(it->m_BusNumber))
+                for (const auto & stop : m_TransportCatalogue.GetStops(it->m_BusNumber))
                 {
                     StopsPoints.emplace_back(Projector(stop->m_Coords));
                     Stops[stop->m_Name] = StopsPoints.back();
@@ -160,7 +161,7 @@ namespace json_proccessing
         return svg::Color();
     }
 
-    json::Array JsonReader::ReadStatRequest(const RequestHandler & RequestHandler)
+    json::Array JsonReader::ReadStatRequest(const RequestHandler & RequestHandler, TransportRouter & TransportRouter)
     {
         const auto ObjectBase = m_JsonObject.find("stat_requests");
         if (ObjectBase != m_JsonObject.end())
@@ -184,7 +185,7 @@ namespace json_proccessing
                     }
                     else if (request_type->second.AsString() == "Route")
                     {
-                        m_OutputData.emplace_back(GetRoute(m_TransportRouter, request.AsDict()));
+                        m_OutputData.emplace_back(GetRoute(TransportRouter, request.AsDict()));
                     }
                 }
             }
@@ -227,25 +228,25 @@ namespace json_proccessing
         .EndDict().Build().AsDict();
     }
 
-    void JsonReader::ReadStopData(TransportRouter & TransportRouter, const json::Dict & Dict)
+    void JsonReader::ReadStopData(transport_catalogue::TransportCatalogue & m_TransportCatalogue, const json::Dict & Dict)
     {
         const auto Name = Dict.at("name").AsString();
         const auto Latitude = Dict.at("latitude").AsDouble();
         const auto Longitude = Dict.at("longitude").AsDouble();
-        TransportRouter.AddStop(Name, Latitude, Longitude);
+        m_TransportCatalogue.AddStop(Name, Latitude, Longitude);
     }
 
-    void JsonReader::ReadStopDistance(TransportRouter & TransportRouter, const json::Dict & Dict)
+    void JsonReader::ReadStopDistance(transport_catalogue::TransportCatalogue & m_TransportCatalogue, const json::Dict & Dict)
     {
         const auto StopNameFrom = Dict.at("name").AsString();
         const auto Stops = Dict.at("road_distances").AsDict();
         for (const auto & [StopNameTo, Distance] : Stops)
         {
-            TransportRouter.SetDistanceBetweenStops(StopNameFrom, StopNameTo, Distance.AsInt());
+            m_TransportCatalogue.SetDistanceBetweenStops(StopNameFrom, StopNameTo, Distance.AsInt());
         }
     }
 
-    void JsonReader::ReadBusData(TransportRouter & TransportRouter, const json::Dict & Dict)
+    void JsonReader::ReadBusData(transport_catalogue::TransportCatalogue & m_TransportCatalogue, const json::Dict & Dict)
     {
         const auto BusName = Dict.at("name").AsString();
         std::vector<std::string_view> Stops;
@@ -254,7 +255,7 @@ namespace json_proccessing
             Stops.emplace_back(Stop.AsString());
         }
         const auto IsCircleRoute = Dict.at("is_roundtrip").AsBool();
-        TransportRouter.AddBus(BusName, Stops, IsCircleRoute);
+        m_TransportCatalogue.AddBus(BusName, Stops, IsCircleRoute);
     }
 
     const json::Node JsonReader::GetBusInfo(const RequestHandler & RequestHandler, const json::Dict & Dict)

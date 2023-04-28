@@ -1,8 +1,8 @@
 #include "transport_router.h"
 #include <iostream>
 
-TransportRouter::TransportRouter()
-{}
+TransportRouter::TransportRouter(const transport_catalogue::TransportCatalogue & m_TransportCatalogue)
+: m_TransportCatalogueRef(m_TransportCatalogue){}
 
 void TransportRouter::SetRouteData(const int BusWaitTime, const double BusVelocity)
 {
@@ -12,7 +12,7 @@ void TransportRouter::SetRouteData(const int BusWaitTime, const double BusVeloci
 
 void TransportRouter::ConstructGraph()
 {
-    m_Graph.SetSize(GetAllStops().size() * 2);
+    m_Graph.SetSize(m_TransportCatalogueRef.GetAllStops().size() * 2);
     ConstructWaitEdge();
     ConstructBusEdge();
 
@@ -46,7 +46,7 @@ const TransportRouter::RouteData TransportRouter::GetRoute(const std::string_vie
 void TransportRouter::ConstructWaitEdge()
 {
     int VertexID = 0;
-    for (const auto & Stop : GetAllStops()) //EDGE WAIT
+    for (const auto & Stop : m_TransportCatalogueRef.GetAllStops()) //EDGE WAIT
     {
         m_VertexWaitUnMap.insert({Stop->m_Name, VertexID});
         m_VertexDistanceUnMap.insert({Stop->m_Name, ++VertexID});
@@ -58,7 +58,7 @@ void TransportRouter::ConstructWaitEdge()
 
 void TransportRouter::ConstructBusEdge()
 {
-    for(const auto & Route : GetBuses())
+    for(const auto & Route : m_TransportCatalogueRef.GetBuses())
     {
         for(size_t BusFrom_it = 0; BusFrom_it < Route->m_BusStopsDeque.size() - 1; ++BusFrom_it)
         {
@@ -68,11 +68,11 @@ void TransportRouter::ConstructBusEdge()
                 double RouteDistance = 0.0;
                 for(size_t Iter = BusFrom_it + 1; Iter <= BusTo_it; ++Iter)
                 {
-                    RouteDistance += ComputeDistance(Route->m_BusStopsDeque[Iter - 1], Route->m_BusStopsDeque[Iter]);
+                    RouteDistance += m_TransportCatalogueRef.ComputeDistance(Route->m_BusStopsDeque[Iter - 1], Route->m_BusStopsDeque[Iter]);
                 }
                 m_Graph.AddEdge({m_VertexDistanceUnMap.at(Route->m_BusStopsDeque[BusFrom_it]->m_Name),
                                  m_VertexWaitUnMap.at(Route->m_BusStopsDeque[BusTo_it]->m_Name),
-                                 RouteDistance / (m_BusVelocity * s_Meter / s_Minute),
+                                 RouteDistance / (m_BusVelocity * s_MetersInKm / s_SecondsInMinute),
                                  Route->m_BusNumber, graph::EdgeType::BUS, ++SpanCount});
             }
         }
@@ -86,11 +86,11 @@ void TransportRouter::ConstructBusEdge()
                     double RouteDistance = 0.0;
                     for(int Iter = BusFrom_it; Iter > BusTo_it; --Iter)
                     {
-                        RouteDistance += ComputeDistance(Route->m_BusStopsDeque[Iter], Route->m_BusStopsDeque[Iter - 1]);
+                        RouteDistance += m_TransportCatalogueRef.ComputeDistance(Route->m_BusStopsDeque[Iter], Route->m_BusStopsDeque[Iter - 1]);
                     }
                     m_Graph.AddEdge({m_VertexDistanceUnMap.at(Route->m_BusStopsDeque[BusFrom_it]->m_Name),
                                      m_VertexWaitUnMap.at(Route->m_BusStopsDeque[BusTo_it]->m_Name),
-                                     RouteDistance / (m_BusVelocity * s_Meter / s_Minute),
+                                     RouteDistance / (m_BusVelocity * s_MetersInKm / s_SecondsInMinute),
                                      Route->m_BusNumber, graph::EdgeType::BUS, ++SpanCount});
                 }
             }

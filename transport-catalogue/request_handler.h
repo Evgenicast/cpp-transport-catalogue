@@ -1,19 +1,19 @@
 #pragma once
 #include "svg.h"
-#include "transport_router.h"
+#include "transport_catalogue.h"
 #include "map_renderer.h"
 
 class RequestHandler
 {
 private:
 
-    const TransportRouter & m_TransportRouterRef;
+    const transport_catalogue::TransportCatalogue & m_TransportCatalogueRef;
     const renderer::MapRenderer & m_RendererRef;
 
 public:
 
     RequestHandler() = delete;
-    RequestHandler(const TransportRouter & TransportRouter, const renderer::MapRenderer & Renderer);
+    RequestHandler(const transport_catalogue::TransportCatalogue & TransportRouter, const renderer::MapRenderer & Renderer);
 
     RequestHandler(const RequestHandler &) = delete;
     RequestHandler & operator=(const RequestHandler &) = delete;

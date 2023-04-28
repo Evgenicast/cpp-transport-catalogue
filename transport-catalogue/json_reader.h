@@ -2,6 +2,7 @@
 #include "json.h"
 #include "transport_router.h"
 #include "request_handler.h"
+#include "transport_catalogue.h"
 #include "map_renderer.h"
 
 namespace json_proccessing
@@ -12,8 +13,8 @@ namespace json_proccessing
 
         /*INPUT DATA*/
         json::Dict m_JsonObject;
-        renderer::MapRenderer m_MapRenderer;
-        TransportRouter m_TransportRouter;
+        renderer::MapRenderer m_MapRenderer;       
+        transport_catalogue::TransportCatalogue m_TransportCatalogue;
 
         /*OUTPUT DATA*/
         std::optional<const tc_request::Bus*> m_BusDataPtr;
@@ -31,19 +32,19 @@ namespace json_proccessing
         JsonReader & operator=(JsonReader &&) noexcept = delete;
 
         /*INPUT*/
-        void ReadBaseRequest(TransportRouter & TransportRouter);
+        void ReadBaseRequest(transport_catalogue::TransportCatalogue & m_TransportCatalogue);
         void ReadRouteSettings(TransportRouter & TransportRouter);
-        void ReadRenderSettings(TransportRouter & TransportRouter, renderer::MapRenderer & MapRenderer);
+        void ReadRenderSettings(transport_catalogue::TransportCatalogue & m_TransportCatalogue, renderer::MapRenderer & MapRenderer);
 
         /*OUTPUT*/
-        json::Array ReadStatRequest(const RequestHandler & RequestHandler);
+        json::Array ReadStatRequest(const RequestHandler & RequestHandler, TransportRouter & TransportRouter);
         void LoadOutput(const RequestHandler & RequestHandler, const json::Array & Vector);
 
         /*BUILD_TRANSPORT_CATALOGE*/
         json::Node GetRoute(TransportRouter & TransportRouter, const json::Dict & Dict);
-        void ReadStopData(TransportRouter & TransportRouter, const json::Dict & Dict);
-        void ReadStopDistance(TransportRouter & TransportRouter, const json::Dict & Dict);
-        void ReadBusData(TransportRouter & TransportRouter, const json::Dict & Dict);
+        void ReadStopData(transport_catalogue::TransportCatalogue & m_TransportCatalogue, const json::Dict & Dict);
+        void ReadStopDistance(transport_catalogue::TransportCatalogue & m_TransportCatalogue, const json::Dict & Dict);
+        void ReadBusData(transport_catalogue::TransportCatalogue & m_TransportCatalogue, const json::Dict & Dict);
         const json::Node GetBusInfo(const RequestHandler & RequestHandler, const json::Dict & Dict);
         const json::Node GetStopInfo(const RequestHandler & RequestHandler, const json::Dict & Dict);
 

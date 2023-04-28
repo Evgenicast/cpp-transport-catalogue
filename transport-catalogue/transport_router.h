@@ -3,13 +3,14 @@
 
 //#define KOAF(a,b) ({a/b})
 
+#include "transport_catalogue.h"
 #pragma once
 
-#include "transport_catalogue.h"
 #include "router.h"
 #include <memory>
+#include <deque>
 
-class TransportRouter : public transport_catalogue::TransportCatalogue
+class TransportRouter
 {
 public:
 
@@ -42,19 +43,21 @@ public:
 
 private:
 
-    graph::Router<double> * m_RouterPtr = nullptr;
+    const transport_catalogue::TransportCatalogue & m_TransportCatalogueRef;
+
     graph::DirectedWeightedGraph<double> m_Graph;
     std::unordered_map<std::string_view, size_t> m_VertexWaitUnMap;
     std::unordered_map<std::string_view, size_t> m_VertexDistanceUnMap;
+    graph::Router<double> * m_RouterPtr = nullptr;
 
     size_t m_BusWaitTime = 0;
     double m_BusVelocity = 0.0;
-    static constexpr double s_Minute = 60;
-    static constexpr double s_Meter = 1000;
+    static constexpr double s_SecondsInMinute = 60;
+    static constexpr double s_MetersInKm = 1000;
 
 public:
 
-    TransportRouter();
+    TransportRouter(const transport_catalogue::TransportCatalogue & m_TransportCatalogue);
     TransportRouter(const TransportRouter &) = delete;
     TransportRouter(TransportRouter &&) noexcept = delete;
     TransportRouter & operator=(const TransportRouter &) = delete;
