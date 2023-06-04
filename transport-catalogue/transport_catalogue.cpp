@@ -173,6 +173,11 @@ namespace transport_catalogue
         return StopCoordinates;
     }
 
+    TransportCatalogue::hashed_distances TransportCatalogue::GetAllDistances() const
+    {
+        return hashed_distances(m_DistanceBetweenStopsUnMap);
+    }
+
 } // namespace transport_catalogue
 
 //----N.B.----//

@@ -13,6 +13,8 @@ namespace transport_catalogue
     {
     private:
 
+        using hashed_distances = std::unordered_map<std::pair<const tc_base::Stop*, const tc_base::Stop*>, int, tc_utilities::StopsDistPtrPairHasher>;
+
         std::deque<tc_base::Bus> m_BusesDeque;
         std::deque<tc_base::Stop> m_StopsDeque;
         std::unordered_map<std::string_view, const tc_base::Bus*> m_BusesUnMap;
@@ -44,6 +46,8 @@ namespace transport_catalogue
         void SetDistanceBetweenStops(const std::string_view & FromStop, const std::string_view & ToStop, const int & Distance);
         int GetDistanceBetweenStops(const tc_base::Stop * From, const tc_base::Stop * To) const;
         const std::vector<geo::Coordinates> GetStopsCoordinates() const;
+        hashed_distances GetAllDistances() const;
+
 
         ~TransportCatalogue() = default;
     };

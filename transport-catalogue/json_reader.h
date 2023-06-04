@@ -4,9 +4,16 @@
 #include "request_handler.h"
 #include "transport_catalogue.h"
 #include "map_renderer.h"
+#include "serialization.h"
+
+#include <filesystem>
+
+using Path = std::filesystem::path;
 
 namespace json_proccessing
 {
+    void JsonSerialize(std::istream& input);
+
     class JsonReader
     {
     private:
@@ -23,8 +30,9 @@ namespace json_proccessing
 
     public:
 
-        JsonReader() = delete;
-        JsonReader(std::istream & Input);
+        JsonReader() = default;
+        explicit JsonReader(std::istream & Input);
+        explicit JsonReader(std::istream & Input, std::ostream & Output);
 
         JsonReader(JsonReader &) = delete;
         JsonReader & operator=(JsonReader &) = delete;
@@ -37,8 +45,9 @@ namespace json_proccessing
         void ReadRenderSettings(transport_catalogue::TransportCatalogue & m_TransportCatalogue, renderer::MapRenderer & MapRenderer);
 
         /*OUTPUT*/
-        json::Array ReadStatRequest(const RequestHandler & RequestHandler, TransportRouter & TransportRouter);
+        void ReadStatRequest(const RequestHandler & RequestHandler, TransportRouter & TransportRouter, const json::Array &arr);
         void LoadOutput(const RequestHandler & RequestHandler, const json::Array & Vector);
+        void JsonDeserialize(const Path & file, std::ostream& output);
 
         /*BUILD_TRANSPORT_CATALOGE*/
         json::Node GetRoute(TransportRouter & TransportRouter, const json::Dict & Dict);

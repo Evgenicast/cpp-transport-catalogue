@@ -154,6 +154,7 @@ namespace renderer
         MapRenderer operator=(MapRenderer &&) noexcept = delete;
 
         void SetRenderSettings(const RenderSettings & RenderSettingsData);
+        const RenderSettings & GetRenderSettings() const;
         void AddRoutRender(const std::vector<svg::Point> & StopsCoords, const svg::Color & StrokeColor);
         void AddStopPointRender(const svg::Point & StopCoords);
         void AddTextRender(const svg::Point & StopCoord, const std::string & Data , const svg::Color& TextColor, bool Stop);

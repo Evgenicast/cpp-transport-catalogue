@@ -64,6 +64,7 @@ public:
     TransportRouter & operator=(TransportRouter &&) noexcept = delete;
 
     void SetRouteData(const int BusWaitTime, const double BusVelocity);
+    std::pair<size_t, double> GetRoutingSettings() const;
     const RouteData GetRoute(const std::string_view From, const std::string_view To);
     void ConstructGraph();
     void ConstructWaitEdge();

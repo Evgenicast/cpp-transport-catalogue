@@ -13,8 +13,13 @@ namespace json_proccessing
         TransportRouter TransportRouter(m_TransportCatalogue);
         ReadRouteSettings(TransportRouter);
         ReadRenderSettings(m_TransportCatalogue, m_MapRenderer);
-        const auto DocumentOutput = ReadStatRequest(RequestHandler(m_TransportCatalogue, m_MapRenderer), TransportRouter);
-        json::Print(json::Document(json::Builder{}.Value(DocumentOutput).Build()), std::cout);
+
+        serialize::Serializer serializer(m_TransportCatalogue, m_MapRenderer, TransportRouter);
+        const auto serialization_settings = m_JsonObject.find("serialization_settings");
+        if (serialization_settings != m_JsonObject.end())
+        {
+            serializer.Serialize(serialization_settings->second.AsDict().at("file").AsString());
+        }
     }
 
     void JsonReader::ReadBaseRequest(transport_catalogue::TransportCatalogue & m_TransportCatalogue)
@@ -66,7 +71,7 @@ namespace json_proccessing
         if (RouteSettings != m_JsonObject.end())
         {
             TransportRouter.SetRouteData(RouteSettings->second.AsDict().at("bus_wait_time").AsInt(),
-                            RouteSettings->second.AsDict().at("bus_velocity").AsDouble());
+            RouteSettings->second.AsDict().at("bus_velocity").AsDouble());
         }
     }
 
@@ -161,37 +166,52 @@ namespace json_proccessing
         return svg::Color();
     }
 
-    json::Array JsonReader::ReadStatRequest(const RequestHandler & RequestHandler, TransportRouter & TransportRouter)
+    void JsonReader::ReadStatRequest(const RequestHandler & RequestHandler, TransportRouter & TransportRouter, const json::Array &arr)
     {
-        const auto ObjectBase = m_JsonObject.find("stat_requests");
-        if (ObjectBase != m_JsonObject.end())
-        {
-            for (const auto & request : ObjectBase->second.AsArray())
+        json::Array response;
+
+            for (const auto & request : arr)
             {
                 const auto request_type= request.AsDict().find("type");
                 if (request_type!= request.AsDict().end())
                 {
                     if (request_type->second.AsString() == "Stop")
                     {
-                        m_OutputData.emplace_back(GetStopInfo(RequestHandler, request.AsDict()));
+                        response.emplace_back(GetStopInfo(RequestHandler, request.AsDict()));
                     }
                     else if (request_type->second.AsString() == "Bus")
                     {
-                        m_OutputData.emplace_back(GetBusInfo(RequestHandler, request.AsDict()));
+                        response.emplace_back(GetBusInfo(RequestHandler, request.AsDict()));
                     }
                     else if (request_type->second.AsString() == "Map")
                     {
-                        m_OutputData.emplace_back(GetMapRender(RequestHandler, request.AsDict()));
+                        response.emplace_back(GetMapRender(RequestHandler, request.AsDict()));
                     }
                     else if (request_type->second.AsString() == "Route")
                     {
-                        m_OutputData.emplace_back(GetRoute(TransportRouter, request.AsDict()));
+                        response.emplace_back(GetRoute(TransportRouter, request.AsDict()));
                     }
                 }
             }
-        }
 
-        return m_OutputData;
+        json::Print(json::Document(json::Builder{}.Value(response).Build()), std::cout);
+    }
+
+    JsonReader::JsonReader(std::istream & Input, std::ostream & Output)
+    {     
+        transport_catalogue::TransportCatalogue TransportCatalogue;
+        renderer::MapRenderer MapRenderer;
+        const auto dict = json::Load(Input).GetRoot().AsDict();
+        const auto serialization_settings = dict.find("serialization_settings");
+        serialize::Deserializer deserializer;
+        deserializer.DeserializeCatalogAndRenderer(TransportCatalogue, MapRenderer, serialization_settings->second.AsDict().at("file").AsString());
+        TransportRouter router(TransportCatalogue);
+        deserializer.DeserealizeRouter(router, serialization_settings->second.AsDict().at("file").AsString());
+        const auto stat_requests = dict.find("stat_requests");
+        if (stat_requests != dict.end())
+        {
+            ReadStatRequest(RequestHandler(TransportCatalogue, MapRenderer), router, stat_requests->second.AsArray());
+        }
     }
 
     json::Node JsonReader::GetRoute(TransportRouter & TransportRouter, const json::Dict & Dict)

@@ -10,6 +10,11 @@ void TransportRouter::SetRouteData(const int BusWaitTime, const double BusVeloci
     m_BusVelocity = BusVelocity;
 }
 
+std::pair<size_t, double> TransportRouter::GetRoutingSettings() const
+{
+    return {m_BusWaitTime, m_BusVelocity};
+}
+
 void TransportRouter::ConstructGraph()
 {
     m_Graph.SetSize(m_TransportCatalogueRef.GetAllStops().size() * 2);

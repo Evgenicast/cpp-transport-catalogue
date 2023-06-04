@@ -85,6 +85,10 @@ void renderer::MapRenderer::SetRenderSettings(const RenderSettings & RenderSetti
 {
     RenderSettings_ = RenderSettingsData;
 }
+const renderer::RenderSettings & renderer::MapRenderer::GetRenderSettings() const
+{
+    return RenderSettings_;
+}
 
 void renderer::MapRenderer::AddRoutRender(const std::vector<svg::Point> & StopsCoords, const svg::Color & StrokeColor)
 {

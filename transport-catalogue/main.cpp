@@ -3,29 +3,35 @@
 #include <fstream>
 
 using namespace std::literals;
-using namespace  std;
 
-void MainTest()
+void PrintUsage(std::ostream& stream = std::cerr)
 {
-    ifstream f("input_simple.json");
-    if (!f)
-    {
-        cout << "file not open" << endl;
-        return;
-    }
-
-    json_proccessing::JsonReader JS(f);
+    stream << "Usage: transport_catalogue [make_base|process_requests]\n"sv;
 }
 
-int main()
+int main(int argc, char* argv[])
 {
+    if (argc != 2)
+    {
+        PrintUsage();
+        return 1;
+    }
 
-    cout << "BEFORE: TransportCatalogue::GetCountOfBusses() = " << GetCountOfBusses() << endl;
-    cout << "BEFORE: TransportCatalogue::GetCountOfStopData() = " << GetCountOfStopData() << endl;
+    const std::string_view mode(argv[1]);
 
-    MainTest();
-    cout << endl;
-    cout << "AFTER: TransportCatalogue::GetCountOfBusses() = " << GetCountOfBusses() << endl;
-    cout << "AFTER: TransportCatalogue::GetCountOfStopData() = " << GetCountOfStopData() << endl;
-    return 0;
+    if (mode == "make_base"sv)
+    {
+        json_proccessing::JsonReader JsonSerialize(std::cin);
+
+    }
+    else if (mode == "process_requests"sv)
+    {
+        json_proccessing::JsonReader JsonDeserialize(std::cin, std::cout);
+
+    }
+    else
+    {
+        PrintUsage();
+        return 1;
+    }
 }
